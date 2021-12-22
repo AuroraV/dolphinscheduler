@@ -110,7 +110,7 @@ public class OSUtils {
             loadAverage = osBean.getSystemLoadAverage();
         } catch (Exception e) {
             logger.error("get operation system load average exception, try another method ", e);
-            loadAverage = hal.getProcessor().getSystemLoadAverage();
+            loadAverage = hal.getProcessor().getSystemLoadAverage(1)[0];
             if (Double.isNaN(loadAverage)) {
                 return NEGATIVE_ONE;
             }
@@ -127,7 +127,8 @@ public class OSUtils {
      */
     public static double cpuUsage() {
         CentralProcessor processor = hal.getProcessor();
-        double cpuUsage = processor.getSystemCpuLoad();
+        long[] systemCpuLoadTicks = processor.getSystemCpuLoadTicks();
+        double cpuUsage = processor.getSystemCpuLoadBetweenTicks(systemCpuLoadTicks);
         if (Double.isNaN(cpuUsage)) {
             return NEGATIVE_ONE;
         }

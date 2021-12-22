@@ -51,7 +51,7 @@ public class OshiTest {
 
 
         logger.info("Checking CPU...");
-        printCpu(hal.getProcessor());
+        printCpu(si);
 
     }
 
@@ -64,12 +64,16 @@ public class OshiTest {
     }
 
 
-    private static void printCpu(CentralProcessor processor) {
-        logger.info(String.format("CPU load: %.1f%% (OS MXBean)%n", processor.getSystemCpuLoad() * 100));//CPU load: 24.9% (OS MXBean)
-        logger.info("CPU load averages : {}", processor.getSystemLoadAverage());//CPU load averages : 1.5234375
+    private static void printCpu(SystemInfo si) {
+        CentralProcessor processor = si.getHardware().getProcessor();
+        long[] systemCpuLoadTicks = processor.getSystemCpuLoadTicks();
+        double cpuUsage = processor.getSystemCpuLoadBetweenTicks(systemCpuLoadTicks);
+        logger.info(String.format("CPU load: %.1f%% (OS MXBean)%n", cpuUsage * 100));//CPU load: 24.9% (OS MXBean)
+        logger.info("CPU load averages : {}", processor.getSystemLoadAverage(1)[0]);//CPU load averages : 1.5234375
 
 
-        logger.info("Uptime: " + FormatUtil.formatElapsedSecs(processor.getSystemUptime()));
+        long systemUptime = si.getOperatingSystem().getSystemUptime();
+        logger.info("Uptime: " + FormatUtil.formatElapsedSecs(systemUptime));
         logger.info("Context Switches/Interrupts: " + processor.getContextSwitches() + " / " + processor.getInterrupts());
 
 
@@ -93,7 +97,8 @@ public class OshiTest {
                 "User: %.1f%% Nice: %.1f%% System: %.1f%% Idle: %.1f%% IOwait: %.1f%% IRQ: %.1f%% SoftIRQ: %.1f%% Steal: %.1f%%%n",
                 100d * user / totalCpu, 100d * nice / totalCpu, 100d * sys / totalCpu, 100d * idle / totalCpu,
                 100d * iowait / totalCpu, 100d * irq / totalCpu, 100d * softirq / totalCpu, 100d * steal / totalCpu));
-        logger.info(String.format("CPU load: %.1f%% (counting ticks)%n", processor.getSystemCpuLoadBetweenTicks() * 100));
+        long[] systemCpuLoadTicks2 = processor.getSystemCpuLoadTicks();
+        logger.info(String.format("CPU load: %.1f%% (counting ticks)%n", processor.getSystemCpuLoadBetweenTicks(systemCpuLoadTicks) * 100));
 
 
 
@@ -103,7 +108,8 @@ public class OshiTest {
                 + (loadAverage[2] < 0 ? " N/A" : String.format(" %.2f", loadAverage[2])));
         // per core CPU
         StringBuilder procCpu = new StringBuilder("CPU load per processor:");
-        double[] load = processor.getProcessorCpuLoadBetweenTicks();
+        long[][] processorCpuLoadTicks = processor.getProcessorCpuLoadTicks();
+        double[] load = processor.getProcessorCpuLoadBetweenTicks(processorCpuLoadTicks);
         for (double avg : load) {
             procCpu.append(String.format(" %.1f%%", avg * 100));
         }
